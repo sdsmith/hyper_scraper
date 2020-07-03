@@ -20,7 +20,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
     def start_requests(self):
         # TODO(sdsmith): only do the loc call if it has changed!
-        yield scrapy.Request(url=walmart_loc_url('L7T1X4'), callback=self.parse_loc)
+        yield scrapy.Request(url=walmart_loc_url('L7T1X4'), callback=self.parse_loc, meta={'start_gmtime': gmtime()})
 
     def parse_loc(self, response):
         data = json.loads(response.body)
@@ -28,11 +28,12 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         longitude = data['lng']
 
         urls = [
+            'https://www.walmart.ca/en/ip/nintendo-switch-with-neon-blue-and-neon-red-joycon-nintendo-switch/6000200280557',
             'https://www.walmart.ca/en/ip/nintendo-switch-with-gray-joycon-nintendo-switch/6000200280830'
-            # TODO(sdsmith): other switch types
         ]
         for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse_product_page, meta={'latitude': latitude,
+            yield scrapy.Request(url=url, callback=self.parse_product_page, meta={'start_gmtime': response.meta['start_gmtime'],
+                                                                                  'latitude': latitude,
                                                                                   'longitude': longitude})
 
     def parse_product_page(self, response):
@@ -54,13 +55,14 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
         yield scrapy.Request(url=walmart_available_stock_url(latitude, longitude, upc),
                              callback=self.parse_available_stock,
-                             meta={'product_name': product_name})
+                             meta={'start_gmtime': response.meta['start_gmtime'],
+                                   'product_name': product_name})
 
     def parse_available_stock(self, response):
         data = json.loads(response.body)
 
-        filename = self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S", gmtime()) + '.log'
-        with open(filename, 'w') as f:
+        filename = self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
+        with open(filename, 'a') as f:
             for i, loc in enumerate(data['info']):
                 f.write('{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
                                                                              loc['displayName'],
