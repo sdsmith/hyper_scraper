@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import scrapy
 import json
 from lxml import html
