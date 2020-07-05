@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Scrapy settings for product_scraper project
+# Scrapy settings for hyper_scraper project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -9,14 +9,14 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'product_scraper'
+BOT_NAME = 'hyper_scraper'
 
-SPIDER_MODULES = ['product_scraper.spiders']
-NEWSPIDER_MODULE = 'product_scraper.spiders'
+SPIDER_MODULES = ['hyper_scraper.spiders']
+NEWSPIDER_MODULE = 'hyper_scraper.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-# USER_AGENT = 'product_scraper (+http://www.yourdomain.com)'
+# USER_AGENT = 'hyper_scraper (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -47,13 +47,13 @@ ROBOTSTXT_OBEY = True
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
-#     'product_scraper.middlewares.ProductScraperSpiderMiddleware': 543,
+#     'hyper_scraper.middlewares.ProductScraperSpiderMiddleware': 543,
 # }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 # DOWNLOADER_MIDDLEWARES = {
-#     'product_scraper.middlewares.ProductScraperDownloaderMiddleware': 543,
+#     'hyper_scraper.middlewares.ProductScraperDownloaderMiddleware': 543,
 # }
 
 # Enable or disable extensions
@@ -65,7 +65,7 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 # ITEM_PIPELINES = {
-#     'product_scraper.pipelines.ProductScraperPipeline': 300,
+#     'hyper_scraper.pipelines.ProductScraperPipeline': 300,
 # }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
