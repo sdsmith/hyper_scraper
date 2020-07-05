@@ -34,6 +34,7 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
     name = 'bestbuy_nintendo_switch'
 
     def start_requests(self):
+        slack.send_health_message('Starting Bestbuy check...')
         postal_code = 'L7T1X4'
         yield scrapy.Request(url=bestbuy_loc_url(postal_code), callback=self.parse_loc, meta={'start_gmtime': gmtime(),
                                                                                               'postal_code': postal_code})
@@ -105,4 +106,6 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
 
             f.write(msg)
 
-        self.log('Found {} locations, saved in {}'.format(len(response.meta['location_info']), filename))
+        status_msg = 'Found {} locations, saved in {}'.format(len(response.meta['location_info']), filename)
+        self.log(status_msg)
+        slack.send_health_message(status_msg)

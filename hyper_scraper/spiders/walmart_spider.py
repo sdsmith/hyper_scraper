@@ -24,6 +24,8 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
     name = 'walmart_nintendo_switch'
 
     def start_requests(self):
+        slack.send_health_message('Starting Walmart check...')
+
         # TODO(sdsmith): only do the loc call if it has changed!
         yield scrapy.Request(url=walmart_loc_url('L7T1X4'), callback=self.parse_loc, meta={'start_gmtime': gmtime()})
 
@@ -82,4 +84,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
                 f.write(msg)
 
-        self.log('Found {} locations, saved in {}'.format(i + 1, filename))
+        status_msg = 'Found {} locations, saved in {}'.format(i + 1, filename)
+        self.log(status_msg)
+        slack.send_message(status_msg)
