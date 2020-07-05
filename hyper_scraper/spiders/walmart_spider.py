@@ -68,12 +68,13 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
     def parse_available_stock(self, response):
         data = json.loads(response.body)
+        product_name = response.meta['product_name']
 
         Path('logs').mkdir(parents=True, exist_ok=True)
         filename = 'logs/' + self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
         with open(filename, 'a') as f:
             for i, loc in enumerate(data['info']):
-                msg = '{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
+                msg = '{}: {} at {} - price ${}, availability {}\n'.format(product_name,
                                                                            loc['displayName'],
                                                                            loc['intersection'],
                                                                            loc['sellPrice'],
@@ -84,6 +85,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
                 f.write(msg)
 
-        status_msg = 'Found {} locations, saved in {}'.format(i + 1, filename)
+        status_msg = '{}: found {} locations, saved in {}'.format(product_name, i + 1, filename)
         self.log(status_msg)
         slack.send_health_message(status_msg)

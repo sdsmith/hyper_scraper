@@ -75,6 +75,7 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
 
     def parse_available_stock(self, response):
         data = json.loads(response.body)
+        product_name = response.meta['product_name']
 
         Path('logs').mkdir(parents=True, exist_ok=True)
         filename = 'logs/' + self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
@@ -94,7 +95,7 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
                                 loc_addr += ' ' + loc_info['address2']
                             loc_addr += ', ' + loc_info['city']
 
-                            msg = '{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
+                            msg = '{}: {} at {} - price ${}, availability {}\n'.format(product_name,
                                                                                        loc_name,
                                                                                        loc_addr,
                                                                                        response.meta['price'],
@@ -106,6 +107,6 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
 
             f.write(msg)
 
-        status_msg = 'Found {} locations, saved in {}'.format(len(response.meta['location_info']), filename)
+        status_msg = '{}: found {} locations, saved in {}'.format(product_name, len(response.meta['location_info']), filename)
         self.log(status_msg)
         slack.send_health_message(status_msg)
