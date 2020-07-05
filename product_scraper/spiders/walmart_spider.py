@@ -4,6 +4,7 @@ import json
 from lxml import html
 from time import gmtime, strftime
 from notifs import slack
+from pathlib import Path
 
 
 def strip_html(s):
@@ -66,7 +67,8 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
     def parse_available_stock(self, response):
         data = json.loads(response.body)
 
-        filename = self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
+        Path('logs').mkdir(parents=True, exist_ok=True)
+        filename = 'logs/' + self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
         with open(filename, 'a') as f:
             for i, loc in enumerate(data['info']):
                 msg = '{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
