@@ -29,8 +29,3 @@ jobs:
     - name: Lint
       run: |
         ./lint
-    - name: Test with pytest
-      env:
-        HYPRSCRP_SLACK_HOOK_URL: ${{ secrets.HYPRSCRP_SLACK_HOOK_URL }}
-      run: |
-        pytest
