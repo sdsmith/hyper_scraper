@@ -86,4 +86,4 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
 
         status_msg = 'Found {} locations, saved in {}'.format(i + 1, filename)
         self.log(status_msg)
-        slack.send_message(status_msg)
+        slack.send_health_message(status_msg)
