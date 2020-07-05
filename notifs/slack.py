@@ -4,23 +4,37 @@ import json
 import os
 
 
-def send_message(text):
+def _send(slack_url: str, text: str) -> None:
     post = {'text': text}
 
+    try:
+        json_data = json.dumps(post)
+        req = request.Request(slack_url,
+                              data=json_data.encode('ascii'),
+                              headers={'Content-Type': 'application/json'})
+        request.urlopen(req)
+    except Exception as e:
+        print('failed to send message to slack: {}'.format(str(e)))
+
+
+def send_health_message(text: str) -> None:
+    slack_url = os.getenv('HYPRSCRP_HEALTH_SLACK_HOOK_URL', '')
+    if slack_url == '':
+        print('failed to send message to slack: HYPRSCRP_HEALTH_SLACK_HOOK_URL not set')
+        return
+
+    _send(slack_url, text)
+
+
+def send_message(text) -> None:
     slack_url = os.getenv('HYPRSCRP_SLACK_HOOK_URL', '')
     if slack_url == '':
         print('failed to send message to slack: HYPRSCRP_SLACK_HOOK_URL not set')
         return
 
-    try:
-        json_data = json.dumps(post)
-        req = request.Request('https://hooks.slack.com/services/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',
-                              data=json_data.encode('ascii'),
-                              headers={'Content-Type': 'application/json'})
-        request.urlopen(req)
-    except Exception as e:
-        print('failed to send message to slack: ' + str(e))
+    _send(slack_url, text)
 
 
 if __name__ == '__main__':
+    send_health_message('Hello health!')
     send_message('Hello world!')
