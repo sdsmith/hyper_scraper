@@ -3,21 +3,24 @@ import scrapy
 import json
 from lxml import html
 from time import gmtime, strftime
-        
+from notifs import slack
+
+
 def strip_html(s):
     return str(html.fromstring(s).text_content())
+
 
 def walmart_loc_url(zip_code: str) -> str:
     return 'https://www.walmart.ca/api/product-page/geo-location?postalCode=' + zip_code
 
+
 def walmart_available_stock_url(latitude: str, longitude: str, upc: str) -> str:
-    return 'https://www.walmart.ca/api/product-page/find-in-store?latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
+    return 'https://www.walmart.ca/api/product-page/find-in-store?'\
+        'latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
+
 
 class WalmartNintendoSwitchSpider(scrapy.Spider):
     name = 'walmart_nintendo_switch'
-
-    _latitude = ""
-    _longitude = ""
 
     def start_requests(self):
         # TODO(sdsmith): only do the loc call if it has changed!
@@ -33,21 +36,22 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
             'https://www.walmart.ca/en/ip/nintendo-switch-with-gray-joycon-nintendo-switch/6000200280830'
         ]
         for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse_product_page, meta={'start_gmtime': response.meta['start_gmtime'],
-                                                                                  'latitude': latitude,
-                                                                                  'longitude': longitude})
+            yield scrapy.Request(url=url, callback=self.parse_product_page,
+                                 meta={'start_gmtime': response.meta['start_gmtime'],
+                                       'latitude': latitude,
+                                       'longitude': longitude})
 
     def parse_product_page(self, response):
         latitude = response.meta['latitude']
         longitude = response.meta['longitude']
 
         product_name = response.xpath('//h1[@data-automation="product-title"]/text()').get()
-        
+
         text = strip_html(response.css('body script:first-of-type').getall()[1])
         start_js = 'window.__PRELOADED_STATE__='
         if text.find(start_js) != 0:
             print("JS start is not found!")
-            assert false
+            assert False
         text = text[len(start_js):-1]
         data = json.loads(text)
 
@@ -65,10 +69,15 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         filename = self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
         with open(filename, 'a') as f:
             for i, loc in enumerate(data['info']):
-                f.write('{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
-                                                                             loc['displayName'],
-                                                                             loc['intersection'],
-                                                                             loc['sellPrice'],
-                                                                             loc['availabilityStatus']))
+                msg = '{}: {} at {} - price ${}, availability {}\n'.format(response.meta['product_name'],
+                                                                           loc['displayName'],
+                                                                           loc['intersection'],
+                                                                           loc['sellPrice'],
+                                                                           loc['availabilityStatus'])
+
+                if loc['availabilityStatus'] != 'OUT_OF_STOCK':
+                    slack.send_message(msg)
+
+                f.write(msg)
 
         self.log('Found {} locations, saved in {}'.format(i + 1, filename))
