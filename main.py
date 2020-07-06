@@ -7,10 +7,10 @@ import sqlite3
 
 
 def setup_db():
+    Path('db').mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect('db/hyper_scraper.db')  # Creates the db
 
     try:
-        Path('db').mkdir(parents=True, exist_ok=True)
         c = conn.cursor()
 
         c.execute("""
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS store_locations (
         c.execute("""
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    last_updated INTEGER,
     name TEXT COLLATE NOCASE,
     store_id INTEGER,
     location_id INTEGER,
