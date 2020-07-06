@@ -2,25 +2,25 @@
 
 from scrapy.crawler import CrawlerProcess
 from hyper_scraper.spiders.walmart_spider import WalmartNintendoSwitchSpider
-from pathlib import Part
+from pathlib import Path
 import sqlite3
 
+
 def setup_db():
-    conn = sqlite3.connect('db/hyper_scraper.db') # Creates the db
+    conn = sqlite3.connect('db/hyper_scraper.db')  # Creates the db
 
     try:
         Path('db').mkdir(parents=True, exist_ok=True)
-        with open('db/schema.sql', 'r') as f:
-            c = conn.cursor()
+        c = conn.cursor()
 
-            c.execute("""
+        c.execute("""
 CREATE TABLE IF NOT EXISTS stores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT COLLATE NOCASE
 );
 """)
 
-            c.execute("""
+        c.execute("""
 CREATE TABLE IF NOT EXISTS store_locations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     store_id INTEGER,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS store_locations (
 );
 """)
 
-            c.execute("""
+        c.execute("""
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT COLLATE NOCASE,
@@ -41,10 +41,15 @@ CREATE TABLE IF NOT EXISTS products (
 );
 """)
 
-            conn.commit()
+        conn.commit()
 
     finally:
         conn.close()
 
+
 if __name__ == '__main__':
     setup_db()
+
+    process = CrawlerProcess()
+    process.crawl(WalmartNintendoSwitchSpider)
+    process.start()
