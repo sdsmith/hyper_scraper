@@ -8,9 +8,7 @@ import sqlite3
 
 def setup_db():
     Path('db').mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect('db/hyper_scraper.db')  # Creates the db
-
-    try:
+    with sqlite3.connect('db/hyper_scraper.db') as conn:  # Creates the db
         c = conn.cursor()
 
         c.execute("""
@@ -43,9 +41,6 @@ CREATE TABLE IF NOT EXISTS products (
 """)
 
         conn.commit()
-
-    finally:
-        conn.close()
 
 
 if __name__ == '__main__':
