@@ -99,3 +99,33 @@ ORDER BY ps.last_updated DESC""",
                     assert stock_change is False
 
         return stock_change
+
+    @staticmethod
+    def products_in_stock():
+        """Find all products that are currently in stock."""
+
+        with sqlite3.connect(Dao.DB_FILE) as conn:
+            c = conn.cursor()
+
+            c.execute("""
+SELECT datetime(ps.last_updated, 'unixepoch'), s.name, sl.location, p.name, ps.price, ps.quantity
+FROM product_stock AS ps
+INNER JOIN stores AS s ON s.id=ps.store_id
+INNER JOIN store_locations AS sl ON sl.id = ps.location_id
+INNER JOIN products AS p ON p.id=ps.product_id
+INNER JOIN (
+    SELECT id, max(last_updated)
+    FROM product_stock
+    GROUP BY store_id, location_id, product_id) latest_stock ON latest_stock.id=ps.id
+WHERE ps.quantity != 0
+ORDER BY s.name, sl.location, p.name""")
+
+            for row in c.fetchall():
+                timestamp = row[0]
+                store = row[1]
+                location = row[2]
+                product = row[3]
+                price = row[4]
+                quantity = row[5]
+
+                print('[{}] {}, {} - {}: {} @ ${}'.format(timestamp, store, location, product, quantity, price))
