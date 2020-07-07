@@ -86,7 +86,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
             for i, loc in enumerate(data['info']):
                 location = loc['displayName'] + ', ' + loc['intersection']
                 quantity = availStatusToQuantity[loc['availabilityStatus']]
-                price = loc['sellPrice']
+                price = float(loc['sellPrice'])
                 msg = '{}: {} - price ${}, availability {}\n'.format(product_name,
                                                                      location,
                                                                      price,

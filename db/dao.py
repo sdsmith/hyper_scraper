@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS product_stock (
     store_id INTEGER NOT NULL,
     location_id INTEGER NOT NULL,
     quantity INTEGER,
-    price INTEGER,
+    price REAL,
     FOREIGN KEY(product_id) REFERENCES products(id)
     FOREIGN KEY(store_id) REFERENCES stores(id),
     FOREIGN KEY(location_id) REFERENCES store_locations(id)
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS product_stock (
 
     @staticmethod
     def record_latest_product_stock(utc_epoch: int, product_name: str, store_id: int, location: str,
-                                    quantity: int, price: int) -> bool:
+                                    quantity: int, price: float) -> bool:
         """Records the latest product stock. No record is inserted if nothing
         has changed. Return true if there has been a stock change or the stock
         has been recorded for the first time with greater than zero items.
