@@ -18,7 +18,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
     def _loc_url(self, zip_code: str) -> str:
         return 'https://www.walmart.ca/api/product-page/geo-location?postalCode=' + zip_code
 
-
     def _available_stock_url(self, latitude: str, longitude: str, upc: str) -> str:
         return 'https://www.walmart.ca/api/product-page/find-in-store?'\
             'latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
