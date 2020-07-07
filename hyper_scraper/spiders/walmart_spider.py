@@ -30,7 +30,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         slack.send_health_message('Starting Walmart check...')
         with sqlite3.connect('db/hyper_scraper.db') as conn:
             c = conn.cursor()
-            print(store_name)
             c.execute('SELECT id FROM stores WHERE name=?', (store_name,))
 
             store_id = -1
@@ -68,7 +67,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         text = strip_html(response.css('body script:first-of-type').getall()[1])
         start_js = 'window.__PRELOADED_STATE__='
         if text.find(start_js) != 0:
-            print("JS start is not found!")
+            self.log("JS start is not found!")
             assert False
         text = text[len(start_js):-1]
         data = json.loads(text)
@@ -114,7 +113,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                     row_product_stock = c.fetchone()
 
                     if row_product_stock is None:
-                        print('STEWART: no product stock entry')
                         # Record new product
 
                         # Store
@@ -124,7 +122,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                         if row_loc is not None:
                             loc_id = row_loc[0]
                         else:
-                            print('STEWART: no store entry')
                             c.execute('INSERT INTO store_locations(store_id, location) VALUES (?, ?)', (store_id, location))
                             loc_id = c.lastrowid
 
@@ -135,7 +132,6 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                         if row_products is not None:
                             product_id = row_products[0]
                         else:
-                            print('STEWART: no product entry')
                             c.execute('INSERT INTO products(name) VALUES (?)', (product_name,))
                             product_id = c.lastrowid
 
