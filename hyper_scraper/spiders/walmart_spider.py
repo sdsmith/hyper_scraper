@@ -12,17 +12,16 @@ def strip_html(s):
     return str(html.fromstring(s).text_content())
 
 
-def walmart_loc_url(zip_code: str) -> str:
-    return 'https://www.walmart.ca/api/product-page/geo-location?postalCode=' + zip_code
-
-
-def walmart_available_stock_url(latitude: str, longitude: str, upc: str) -> str:
-    return 'https://www.walmart.ca/api/product-page/find-in-store?'\
-        'latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
-
-
 class WalmartNintendoSwitchSpider(scrapy.Spider):
     name = 'walmart_nintendo_switch'
+
+    def _loc_url(self, zip_code: str) -> str:
+        return 'https://www.walmart.ca/api/product-page/geo-location?postalCode=' + zip_code
+
+
+    def _available_stock_url(self, latitude: str, longitude: str, upc: str) -> str:
+        return 'https://www.walmart.ca/api/product-page/find-in-store?'\
+            'latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
 
     def start_requests(self):
         store_name = 'walmart'
@@ -41,7 +40,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                 store_id = c.lastrowid
 
         # TODO(sdsmith): only do the loc call if it has changed!
-        yield scrapy.Request(url=walmart_loc_url('L7T1X4'), callback=self.parse_loc, meta={'db': {'store_id': store_id}})
+        yield scrapy.Request(url=self._loc_url('L7T1X4'), callback=self.parse_loc, meta={'db': {'store_id': store_id}})
 
     def parse_loc(self, response):
         data = json.loads(response.body)
@@ -75,7 +74,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         skus_data = data['entities']['skus']
         upc = skus_data[list(skus_data)[0]]['upc'][0]
 
-        yield scrapy.Request(url=walmart_available_stock_url(latitude, longitude, upc),
+        yield scrapy.Request(url=self._available_stock_url(latitude, longitude, upc),
                              callback=self.parse_available_stock,
                              meta={'product_name': product_name,
                                    'db': response.meta['db']})
