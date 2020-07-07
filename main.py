@@ -14,27 +14,35 @@ def setup_db():
         c.execute("""
 CREATE TABLE IF NOT EXISTS stores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT COLLATE NOCASE
+    name TEXT COLLATE NOCASE UNIQUE NOT NULL
 );
 """)
 
         c.execute("""
 CREATE TABLE IF NOT EXISTS store_locations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    store_id INTEGER,
-    location TEXT COLLATE NOCASE
+    store_id INTEGER NOT NULL,
+    location TEXT COLLATE NOCASE NOT NULL
 );
 """)
 
         c.execute("""
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    last_updated INTEGER,
-    name TEXT COLLATE NOCASE,
-    store_id INTEGER,
-    location_id INTEGER,
+    name TEXT COLLATE NOCASE UNIQUE NOT NULL
+);
+""")
+
+        c.execute("""
+CREATE TABLE IF NOT EXISTS product_stock (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    last_updated INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    store_id INTEGER NOT NULL,
+    location_id INTEGER NOT NULL,
     quantity INTEGER,
     price INTEGER,
+    FOREIGN KEY(product_id) REFERENCES products(id)
     FOREIGN KEY(store_id) REFERENCES stores(id),
     FOREIGN KEY(location_id) REFERENCES store_locations(id)
 );
