@@ -150,7 +150,7 @@ ORDER BY ps.last_updated DESC""",
     def products_in_stock() -> str:
         """Find all products that are currently in stock."""
 
-        s = ''
+        s = 'Product Stock Summary:\n'
         with sqlite3.connect(Dao.DB_FILE) as conn:
             c = conn.cursor()
 
@@ -175,6 +175,6 @@ ORDER BY s.name, sl.location, p.name""")
                 price = row[4]
                 quantity = row[5]
 
-                s += '[{}] {}, {} - {}: {} @ ${}\n'.format(timestamp, store, location, product, quantity, price)
+                s += '- [{}] {}, {} - {}: {} @ ${}\n'.format(timestamp, store, location, product, quantity, price)
 
         return s
