@@ -5,7 +5,6 @@ from lxml import html
 from time import strftime, mktime
 from notifs import slack
 from pathlib import Path
-import sqlite3
 from db.dao import Dao
 
 
@@ -83,81 +82,23 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                                  'LIMITED': 5,
                                  'AVAILABLE': 30}
 
-        with sqlite3.connect('db/hyper_scraper.db') as conn:
-            c = conn.cursor()
+        with open(logfile, 'a') as f:
+            for i, loc in enumerate(data['info']):
+                location = loc['displayName'] + ', ' + loc['intersection']
+                quantity = availStatusToQuantity[loc['availabilityStatus']]
+                price = loc['sellPrice']
+                msg = '{}: {} - price ${}, availability {}\n'.format(product_name,
+                                                                     location,
+                                                                     price,
+                                                                     loc['availabilityStatus'])
 
-            with open(logfile, 'a') as f:
-                for i, loc in enumerate(data['info']):
-                    notify = False
-                    location = loc['displayName'] + ', ' + loc['intersection']
-                    new_quantity = availStatusToQuantity[loc['availabilityStatus']]
-                    price = loc['sellPrice']
-                    msg = '{}: {} - price ${}, availability {}\n'.format(product_name,
-                                                                         location,
-                                                                         price,
-                                                                         loc['availabilityStatus'])
+                store_id = response.meta['db']['store_id']
+                is_change = Dao.record_latest_product_stock(start_time_epoch, product_name, store_id,
+                                                            location, quantity, price)
+                if is_change:
+                    slack.send_message(msg)
 
-                    store_id = response.meta['db']['store_id']
-                    c.execute('SELECT ps.id, ps.last_updated, ps.location_id, ps.quantity, ps.price FROM product_stock AS ps INNER JOIN store_locations AS sl ON sl.id = ps.location_id INNER JOIN products AS p ON p.id=ps.product_id WHERE p.name=? AND ps.store_id=? AND sl.location=? ORDER BY ps.last_updated DESC', (product_name, store_id, location))
-                    row_product_stock = c.fetchone()
-
-                    if row_product_stock is None:
-                        # Record new product
-
-                        # Store
-                        c.execute('SELECT id FROM store_locations WHERE store_id=? AND location=?', (store_id, location))
-                        loc_id = -1
-                        row_loc = c.fetchone()
-                        if row_loc is not None:
-                            loc_id = row_loc[0]
-                        else:
-                            c.execute('INSERT INTO store_locations(store_id, location) VALUES (?, ?)', (store_id, location))
-                            loc_id = c.lastrowid
-
-                        # Product
-                        c.execute('SELECT id FROM products WHERE name=?', (product_name,))
-                        product_id = -1
-                        row_products = c.fetchone()
-                        if row_products is not None:
-                            product_id = row_products[0]
-                        else:
-                            c.execute('INSERT INTO products(name) VALUES (?)', (product_name,))
-                            product_id = c.lastrowid
-
-                        # Product stock
-                        c.execute('INSERT INTO product_stock(last_updated, product_id, store_id, location_id, quantity, price)'
-                                  'VALUES (?, ?, ?, ?, ?, ?)',
-                                  (start_time_epoch, product_id, store_id, loc_id,
-                                   new_quantity, price))
-
-                        if loc['availabilityStatus'] != 'OUT_OF_STOCK':
-                            notify = True
-
-                    else:
-                        # Check old product
-                        loc_id = row_product_stock[2]
-                        old_quantity = row_product_stock[3]
-                        old_price = row_product_stock[4]
-                        if new_quantity != old_quantity or price != old_price:
-                            # Something changed, add new entry
-                            c.execute('SELECT id FROM products WHERE name=?', (product_name,))
-                            row_products = c.fetchone()
-                            assert row_products is not None
-                            product_id = row_products[0]
-                            c.execute('INSERT INTO products(last_updated, product_id, store_id, location_id, '
-                                      'quantity, price) VALUES(?, ?, ?, ?, ?, ?)',
-                                      (start_time_epoch, product_id, store_id, loc_id,
-                                       new_quantity, price))
-                            notify = True
-
-                        else:
-                            # TODO(sdsmith): nothing new, don't notify
-                            assert notify is False
-
-                    if notify:
-                        slack.send_message(msg)
-
-                    f.write(msg)
+                f.write(msg)
 
             status_msg = '{}: found {} locations, saved in {}'.format(product_name, i + 1, logfile)
             self.log(status_msg)
