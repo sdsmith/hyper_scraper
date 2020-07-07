@@ -6,6 +6,7 @@ from time import strftime, mktime
 from notifs import slack
 from pathlib import Path
 import sqlite3
+from db.dao import Dao
 
 
 def strip_html(s):
@@ -26,17 +27,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
         store_name = 'walmart'
 
         slack.send_health_message('Starting Walmart check...')
-        with sqlite3.connect('db/hyper_scraper.db') as conn:
-            c = conn.cursor()
-            c.execute('SELECT id FROM stores WHERE name=?', (store_name,))
-
-            store_id = -1
-            row = c.fetchone()
-            if row is not None:
-                store_id = row[0]
-            else:
-                c.execute('INSERT INTO stores(name) VALUES (?)', (store_name,))
-                store_id = c.lastrowid
+        store_id = Dao.get_store_id(store_name)
 
         # TODO(sdsmith): only do the loc call if it has changed!
         yield scrapy.Request(url=self._loc_url('L7T1X4'), callback=self.parse_loc, meta={'db': {'store_id': store_id}})
