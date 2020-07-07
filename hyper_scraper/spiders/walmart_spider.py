@@ -110,7 +110,7 @@ class WalmartNintendoSwitchSpider(scrapy.Spider):
                                                                          loc['availabilityStatus'])
 
                     store_id = response.meta['db']['store_id']
-                    c.execute('SELECT ps.id, ps.last_updated, ps.location_id, ps.quantity, ps.price FROM product_stock AS ps INNER JOIN store_locations AS sl ON sl.id = ps.location_id INNER JOIN products AS p ON p.id=ps.product_id WHERE p.name=? AND ps.store_id=? AND sl.location=?', (product_name, store_id, location))
+                    c.execute('SELECT ps.id, ps.last_updated, ps.location_id, ps.quantity, ps.price FROM product_stock AS ps INNER JOIN store_locations AS sl ON sl.id = ps.location_id INNER JOIN products AS p ON p.id=ps.product_id WHERE p.name=? AND ps.store_id=? AND sl.location=? ORDER BY ps.last_updated DESC', (product_name, store_id, location))
                     row_product_stock = c.fetchone()
 
                     if row_product_stock is None:
