@@ -175,6 +175,6 @@ ORDER BY s.name, sl.location, p.name""")
                 price = row[4]
                 quantity = row[5]
 
-                s += '[{}] {}, {} - {}: {} @ ${}'.format(timestamp, store, location, product, quantity, price)
+                s += '[{}] {}, {} - {}: {} @ ${}\n'.format(timestamp, store, location, product, quantity, price)
 
         return s
