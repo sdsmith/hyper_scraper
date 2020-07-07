@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS product_stock (
             c = conn.cursor()
 
             c.execute("""
-SELECT ps.id, ps.last_updated, ps.location_id, ps.quantity, ps.price
+SELECT ps.id, ps.last_updated, ps.location_id, ps.quantity, ps.price, p.id
 FROM product_stock AS ps
 INNER JOIN store_locations AS sl ON sl.id = ps.location_id
 INNER JOIN products AS p ON p.id=ps.product_id
@@ -129,13 +129,10 @@ ORDER BY ps.last_updated DESC""",
                 loc_id = row_product_stock[2]
                 old_quantity = row_product_stock[3]
                 old_price = row_product_stock[4]
+                product_id = row_product_stock[5]
                 if quantity != old_quantity or price != old_price:
                     # Something changed, add new entry
-                    c.execute('SELECT id FROM products WHERE name=?', (product_name,))
-                    row_products = c.fetchone()
-                    assert row_products is not None
-                    product_id = row_products[0]
-                    c.execute('INSERT INTO products(last_updated, product_id, store_id, location_id, '
+                    c.execute('INSERT INTO product_stock(last_updated, product_id, store_id, location_id, '
                               'quantity, price) VALUES(?, ?, ?, ?, ?, ?)',
                               (utc_epoch, product_id, store_id, loc_id, quantity, price))
                     stock_change = True

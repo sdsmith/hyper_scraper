@@ -12,7 +12,9 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'stock':
-            slack.send_message(Dao.products_in_stock())
+            s = Dao.products_in_stock()
+            slack.send_message(s)
+            print(s)
             exit(0)
         else:
             print('Usage: main.py [stock]')
