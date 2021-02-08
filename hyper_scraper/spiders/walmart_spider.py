@@ -6,19 +6,18 @@ from time import strftime, mktime
 from notifs import slack
 from pathlib import Path
 from db.dao import Dao
-
-
-def strip_html(s):
-    return str(html.fromstring(s).text_content())
+from utils import strip_html
 
 
 class WalmartNintendoSwitchSpider(scrapy.Spider):
     name = 'walmart_nintendo_switch'
 
-    def _loc_url(self, zip_code: str) -> str:
+    @staticmethod
+    def _loc_url(zip_code: str) -> str:
         return 'https://www.walmart.ca/api/product-page/geo-location?postalCode=' + zip_code
 
-    def _available_stock_url(self, latitude: str, longitude: str, upc: str) -> str:
+    @staticmethod
+    def _available_stock_url(latitude: str, longitude: str, upc: str) -> str:
         return 'https://www.walmart.ca/api/product-page/find-in-store?'\
             'latitude={}&longitude={}&lang=en&upc={}'.format(latitude, longitude, upc)
 

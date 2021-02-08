@@ -5,39 +5,37 @@ from lxml import html
 from time import gmtime, strftime
 from notifs import slack
 from pathlib import Path
-
-
-def strip_html(s):
-    return str(html.fromstring(s).text_content())
-
-
-def bestbuy_loc_url(postal_code: str) -> str:
-    # postalCode only takes the first 3 digits of the postal code
-    return 'https://www.bestbuy.ca/api/v2/json/locations?lang=en-CA&postalCode=' + postal_code[:3]
-
-
-def bestbuy_available_stock_url(location_ids: [str], postal_code: str, sku: str) -> str:
-    locations = '|'.join(location_ids)
-
-    return 'https://www.bestbuy.ca/ecomm-api/availability/products?accept=application/'\
-        'vnd.bestbuy.standardproduct.v1+json&accept-language=en-CA&'\
-        'locations={}&postalCode={}&skus={}'.format(locations, postal_code[:3], sku)
-
-
-def bestbuy_get_sku_from_product_url(url: str) -> str:
-    # It's the last thing in the url
-    # ex: https://www.bestbuy.ca/en-ca/product/nintendo-switch-console-with-neon-red-blue-joy-con/13817625
-    return url.split('/')[-1]
+from utils import strip_html
 
 
 class BestbuyNintendoSwitchSpider(scrapy.Spider):
     name = 'bestbuy_nintendo_switch'
-
+    handle_httpstatus_list = [415]
+    
+    @staticmethod
+    def _loc_url(postal_code: str) -> str:
+        # postalCode only takes the first 3 digits of the postal code
+        return 'https://www.bestbuy.ca/api/v2/json/locations?lang=en-CA&postalCode=' + postal_code[:3]
+    
+    @staticmethod
+    def _available_stock_url(location_ids: [str], postal_code: str, sku: str) -> str:
+        locations = '|'.join(location_ids)
+    
+        return 'https://www.bestbuy.ca/ecomm-api/availability/products?accept=application/'\
+            'vnd.bestbuy.standardproduct.v1+json&accept-language=en-CA&'\
+            'locations={}&postalCode={}&skus={}'.format(locations, postal_code[:3], sku)
+    
+    @staticmethod
+    def _get_sku_from_product_url(url: str) -> str:
+        # It's the last thing in the url
+        # ex: https://www.bestbuy.ca/en-ca/product/nintendo-switch-console-with-neon-red-blue-joy-con/13817625
+        return url.split('/')[-1]
+    
     def start_requests(self):
         slack.send_health_message('Starting Bestbuy check...')
         postal_code = 'L7T1X4'
-        yield scrapy.Request(url=bestbuy_loc_url(postal_code), callback=self.parse_loc, meta={'start_gmtime': gmtime(),
-                                                                                              'postal_code': postal_code})
+        yield scrapy.Request(url=self._loc_url(postal_code), callback=self.parse_loc, meta={'start_gmtime': gmtime(),
+                                                                                            'postal_code': postal_code})
 
     def parse_loc(self, response):
         data = json.loads(response.body)
@@ -52,7 +50,7 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
             'https://www.bestbuy.ca/en-ca/product/nintendo-switch-console-with-grey-joy-con/13817626'
         ]
         for url in urls:
-            sku = bestbuy_get_sku_from_product_url(url)
+            sku = self._get_sku_from_product_url(url)
 
             yield scrapy.Request(url=url,
                                  callback=self.parse_product_page,
@@ -65,18 +63,48 @@ class BestbuyNintendoSwitchSpider(scrapy.Spider):
         product_name = response.xpath('//div[contains(@class, "x-product-detail-page")]/h1/text()').get()
         price = response.xpath('//meta[@itemProp="price"]/@content').get()
 
-        yield scrapy.Request(url=bestbuy_available_stock_url(response.meta['location_info'].keys(),
-                                                             response.meta['postal_code'],
-                                                             response.meta['sku']),
-                             callback=self.parse_available_stock,
-                             meta={'start_gmtime': response.meta['start_gmtime'],
+        req = scrapy.Request(url=self._available_stock_url(response.meta['location_info'].keys(),
+                                                           response.meta['postal_code'],
+                                                           response.meta['sku']),
+                             callback=self.parse_available_stock,                             
+                             headers={'Host': 'www.bestbuy.ca',
+                                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:79.0) Gecko/20100101 Firefox/79.0',
+                                      'Accept': '*/*',
+                                      'Accept-Encoding': 'gzip, deflate, br',
+                                      'Accept-Language': 'en-US,en;q=0.5',
+                                      'Referer': 'https://www.bestbuy.ca/en-ca/product/nintendo-switch-console-with-neon-red-blue-joy-con/13817625',
+                                      'DNT': '1',
+                                      'Connection': 'close',
+                                      # 'Cache-Control': 'max-age=0, no-cache',                                      
+                                      # 'TE': 'Trailers',
+                                      #'Pragma': 'no-cache'
+                             },
+                             meta={'dont_merge_cookies': True,
+                                   'start_gmtime': response.meta['start_gmtime'],
                                    'product_name': product_name,
                                    'price': price})
+        print('STEWART:\n\theader: ' + str(req.headers) + '\n\tbody: ' + req.body.decode('utf-8'))
+        yield req
+        
+        # yield scrapy.Request(url=self._available_stock_url(response.meta['location_info'].keys(),
+        #                                                    response.meta['postal_code'],
+        #                                                    response.meta['sku']),
+        #                      callback=self.parse_available_stock,
+        #                      headers={'Accept': '*/*'},
+        #                      meta={'dont_merge_cookies': True,
+        #                            'start_gmtime': response.meta['start_gmtime'],
+        #                            'product_name': product_name,
+        #                            'price': price})
 
     def parse_available_stock(self, response):
+        # DEBUG(sdsmith): 
+        print('STEWART: request headers: ' + str(response.request.headers))
+        if response.status != 200:
+            exit(1)
+
         data = json.loads(response.body)
         product_name = response.meta['product_name']
-
+        
         Path('logs').mkdir(parents=True, exist_ok=True)
         filename = 'logs/' + self.name + '_' + strftime("%Y-%m-%d_%H:%M:%S_UTC", response.meta['start_gmtime']) + '.log'
         msg = ''
